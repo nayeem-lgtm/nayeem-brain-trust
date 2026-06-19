@@ -18,28 +18,8 @@ export const Route = createFileRoute("/_authenticated/publishers")({
   component: PublishersPage,
 });
 
-type Publisher = { id: string; publisher_id: string; name: string | null; tier: "A" | "B" | "C" | "D" | null };
+type Publisher = { id: string; publisher_id: string; name: string | null };
 type Note = { id: string; publisher_uuid: string; note_date: string; note: string };
-
-const TIERS: Array<"A" | "B" | "C" | "D"> = ["A", "B", "C", "D"];
-const tierStyle = (t: string | null) => {
-  switch (t) {
-    case "A": return "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300";
-    case "B": return "bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300";
-    case "C": return "bg-violet-100 text-violet-800 dark:bg-violet-500/15 dark:text-violet-300";
-    case "D": return "bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-300";
-    default: return "bg-muted text-muted-foreground";
-  }
-};
-const tierRow = (t: string | null) => {
-  switch (t) {
-    case "A": return "bg-emerald-50/60 dark:bg-emerald-500/[0.04]";
-    case "B": return "bg-sky-50/60 dark:bg-sky-500/[0.04]";
-    case "C": return "bg-violet-50/60 dark:bg-violet-500/[0.04]";
-    case "D": return "bg-amber-50/70 dark:bg-amber-500/[0.05]";
-    default: return "";
-  }
-};
 
 function PublishersPage() {
   const qc = useQueryClient();
@@ -51,9 +31,9 @@ function PublishersPage() {
   const noteFn = useServerFn(upsertNote);
 
   const [days, setDays] = useState(7);
-  const [tierFilter, setTierFilter] = useState<"all" | "A" | "B" | "C" | "D">("all");
   const [input, setInput] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [query, setQuery] = useState("");
 
   const pubsQ = useQuery({ queryKey: ["publishers"], queryFn: () => listFn({}) });
   const notesQ = useQuery({
@@ -94,18 +74,20 @@ function PublishersPage() {
     return m;
   }, [notes]);
 
-  const filtered = useMemo(
-    () => (tierFilter === "all" ? publishers : publishers.filter((p) => p.tier === tierFilter)),
-    [publishers, tierFilter],
-  );
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return publishers;
+    return publishers.filter(
+      (p) => p.publisher_id.toLowerCase().includes(q) || (p.name ?? "").toLowerCase().includes(q),
+    );
+  }, [publishers, query]);
 
   function exportCsv() {
     if (publishers.length === 0) return;
-    const header = ["Publisher Name", "Publisher ID", "Tier", ...dateColumns.map(formatDateShort)];
+    const header = ["Publisher Name", "Publisher ID", ...dateColumns.map(formatDateShort)];
     const rows = filtered.map((p) => [
       p.name ?? "",
       p.publisher_id,
-      p.tier ?? "",
       ...dateColumns.map((d) => (noteIndex.get(`${p.id}|${d}`) ?? "").replace(/\s+/g, " ")),
     ]);
     const csv = [header, ...rows].map((r) => r.map(csvCell).join(",")).join("\n");
@@ -159,7 +141,7 @@ function PublishersPage() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder='e.g. "3791 — greeted, offered new creatives" or "add publisher VJ DIGITAL id 3791 tier A"'
+            placeholder='e.g. "3791 — greeted, offered new creatives" or "add publisher VJ DIGITAL id 3791"'
             className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary/50"
             disabled={processMut.isPending}
           />
@@ -180,19 +162,13 @@ function PublishersPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-muted-foreground">Tier:</span>
-        {(["all", ...TIERS] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTierFilter(t)}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
-              tierFilter === t ? "bg-primary text-primary-foreground" : "border border-border bg-card hover:border-primary/30"
-            }`}
-          >
-            {t === "all" ? "All" : `Tier ${t}`}
-          </button>
-        ))}
-        <span className="ml-4 text-muted-foreground">Days:</span>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by ID or name…"
+          className="rounded-md border border-border bg-card px-2.5 py-1 text-xs outline-none focus:border-primary/40"
+        />
+        <span className="ml-2 text-muted-foreground">Days:</span>
         {[7, 14, 30].map((n) => (
           <button
             key={n}
@@ -227,7 +203,6 @@ function PublishersPage() {
               <thead className="bg-primary/10 text-xs uppercase tracking-wider text-foreground">
                 <tr>
                   <th className="sticky left-0 z-10 min-w-[220px] bg-primary/10 px-3 py-2.5 text-left">Publisher</th>
-                  <th className="px-3 py-2.5 text-center">Tier</th>
                   {dateColumns.map((d) => (
                     <th key={d} className="min-w-[140px] px-3 py-2.5 text-left font-medium">
                       {formatDateShort(d)}
@@ -238,15 +213,10 @@ function PublishersPage() {
               </thead>
               <tbody>
                 {filtered.map((p) => (
-                  <tr key={p.id} className={`border-t border-border/60 ${tierRow(p.tier)}`}>
-                    <td className="sticky left-0 z-10 bg-inherit px-3 py-2.5 align-top">
+                  <tr key={p.id} className="border-t border-border/60">
+                    <td className="sticky left-0 z-10 bg-card px-3 py-2.5 align-top">
                       <div className="font-medium leading-tight">{p.name || `Publisher ${p.publisher_id}`}</div>
                       <div className="text-xs text-muted-foreground">ID: {p.publisher_id}</div>
-                    </td>
-                    <td className="px-3 py-2.5 text-center align-top">
-                      <span className={`inline-block rounded-md px-2 py-0.5 text-xs font-semibold ${tierStyle(p.tier)}`}>
-                        {p.tier ?? "—"}
-                      </span>
                     </td>
                     {dateColumns.map((d) => {
                       const note = noteIndex.get(`${p.id}|${d}`);
@@ -326,14 +296,13 @@ function AddPublisherForm({
   onClose, addFn, qc,
 }: {
   onClose: () => void;
-  addFn: (args: { data: { publisher_id: string; name?: string | null; tier?: "A" | "B" | "C" | "D" | null } }) => Promise<unknown>;
+  addFn: (args: { data: { publisher_id: string; name?: string | null } }) => Promise<unknown>;
   qc: ReturnType<typeof useQueryClient>;
 }) {
   const [pid, setPid] = useState("");
   const [name, setName] = useState("");
-  const [tier, setTier] = useState<"A" | "B" | "C" | "D">("A");
   const m = useMutation({
-    mutationFn: () => addFn({ data: { publisher_id: pid.trim(), name: name.trim() || null, tier } }),
+    mutationFn: () => addFn({ data: { publisher_id: pid.trim(), name: name.trim() || null } }),
     onSuccess: () => {
       toast.success("Publisher added");
       qc.invalidateQueries({ queryKey: ["publishers"] });
@@ -344,13 +313,10 @@ function AddPublisherForm({
   return (
     <form
       onSubmit={(e) => { e.preventDefault(); if (pid.trim()) m.mutate(); }}
-      className="grid gap-2 rounded-2xl border border-border bg-card/60 p-4 sm:grid-cols-[1fr_2fr_auto_auto]"
+      className="grid gap-2 rounded-2xl border border-border bg-card/60 p-4 sm:grid-cols-[1fr_2fr_auto]"
     >
       <input value={pid} onChange={(e) => setPid(e.target.value)} placeholder="Publisher ID (e.g. 3791)" className="rounded-lg border border-border bg-background px-3 py-2 text-sm" />
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Publisher name (optional)" className="rounded-lg border border-border bg-background px-3 py-2 text-sm" />
-      <select value={tier} onChange={(e) => setTier(e.target.value as "A" | "B" | "C" | "D")} className="rounded-lg border border-border bg-background px-3 py-2 text-sm">
-        {TIERS.map((t) => <option key={t} value={t}>Tier {t}</option>)}
-      </select>
       <div className="flex gap-2">
         <button type="submit" disabled={!pid.trim() || m.isPending} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">Add</button>
         <button type="button" onClick={onClose} className="rounded-lg border border-border bg-card px-3 py-2 text-sm">Cancel</button>

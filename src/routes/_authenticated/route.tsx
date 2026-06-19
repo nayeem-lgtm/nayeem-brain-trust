@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutDashboard, ListChecks, MessageSquare, LogOut, Sparkles, Calendar as CalendarIcon } from "lucide-react";
+import { LayoutDashboard, ListChecks, MessageSquare, LogOut, Sparkles, Calendar as CalendarIcon, Users } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ThemeProvider } from "@/lib/theme";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_authenticated")({
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/tasks", label: "Tasks", icon: ListChecks },
+  { to: "/publishers", label: "Publishers", icon: Users },
   { to: "/meetings", label: "Meetings", icon: CalendarIcon },
   { to: "/assistant", label: "Co-Pilot Chat", icon: MessageSquare },
 ] as const;

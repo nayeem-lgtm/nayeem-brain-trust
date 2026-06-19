@@ -28,8 +28,7 @@ export const listPublishers = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("publishers")
-      .select("id, publisher_id, name, tier, created_at")
-      .order("tier", { ascending: true, nullsFirst: false })
+      .select("id, publisher_id, name, created_at")
       .order("name", { ascending: true });
     if (error) throw error;
     return data ?? [];

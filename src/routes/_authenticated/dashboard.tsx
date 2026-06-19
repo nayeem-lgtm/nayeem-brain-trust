@@ -281,20 +281,6 @@ function Dashboard() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card/60 p-5">
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">By department</h3>
-            <div className="space-y-2">
-              {deptCounts.map((d) => (
-                <div key={d.value} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full" style={{ background: deptColor(d.value) }} />
-                    <span>{deptLabel(d.value)}</span>
-                  </div>
-                  <span className="font-mono text-muted-foreground">{d.count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </aside>
       </div>
     </div>

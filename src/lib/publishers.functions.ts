@@ -28,8 +28,7 @@ export const listPublishers = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("publishers")
-      .select("id, publisher_id, name, tier, created_at")
-      .order("tier", { ascending: true, nullsFirst: false })
+      .select("id, publisher_id, name, created_at")
       .order("name", { ascending: true });
     if (error) throw error;
     return data ?? [];
@@ -56,17 +55,16 @@ export const addPublisher = createServerFn({ method: "POST" })
     z.object({
       publisher_id: z.string().trim().min(1).max(40),
       name: z.string().trim().max(200).optional().nullable(),
-      tier: z.enum(["A", "B", "C", "D"]).optional().nullable(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("publishers")
       .upsert(
-        { user_id: context.userId, publisher_id: data.publisher_id, name: data.name ?? null, tier: data.tier ?? null },
+        { user_id: context.userId, publisher_id: data.publisher_id, name: data.name ?? null },
         { onConflict: "user_id,publisher_id" },
       )
-      .select("id, publisher_id, name, tier")
+      .select("id, publisher_id, name")
       .single();
     if (error) throw error;
     return row;
@@ -100,7 +98,7 @@ export const upsertNote = createServerFn({ method: "POST" })
   });
 
 // AI: parse a free-text update like "3791 - greeted, offered creatives"
-// or "add publisher VJ DIGITAL INFO LLP id 3791 tier A"
+// or "add publisher VJ DIGITAL INFO LLP id 3791"
 export const processPublisherUpdate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -115,15 +113,14 @@ The user will say things like:
 - "3791 - greeted, offered creatives"
 - "publisher 4641 today: no response, will follow up"
 - "yesterday 2804 followup about IO"
-- "add publisher VJ DIGITAL INFO LLP id 3791 tier A"
-- "set 4641 tier B"
+- "add publisher VJ DIGITAL INFO LLP id 3791"
+- "rename 4641 to ACME Media"
 
 Return ONLY valid JSON (no markdown):
 {
   "intent": "log_note" | "add_publisher" | "update_publisher",
   "publisher_id": string,
   "name": string | null,
-  "tier": "A" | "B" | "C" | "D" | null,
   "note_date": "YYYY-MM-DD" | null,
   "note": string | null
 }
@@ -132,7 +129,7 @@ Rules:
 - publisher_id is the numeric/string ID the user mentions (e.g. "3791").
 - For log_note: default note_date to today unless the user says "yesterday" or gives a date.
 - Compress the note to a short, professional summary (max 140 chars).
-- For add_publisher / update_publisher: include name and/or tier when present.`;
+- For add_publisher / update_publisher: include name when present.`;
 
     const r = await callAnthropic({
       model: MODEL,
@@ -147,16 +144,14 @@ Rules:
       intent: z.enum(["log_note", "add_publisher", "update_publisher"]),
       publisher_id: z.string().min(1).max(40),
       name: z.string().nullable().optional(),
-      tier: z.enum(["A", "B", "C", "D"]).nullable().optional(),
       note_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
       note: z.string().nullable().optional(),
     });
     const out = schema.parse(parsed);
 
-    // Find or create publisher
     const { data: existing } = await context.supabase
       .from("publishers")
-      .select("id, publisher_id, name, tier")
+      .select("id, publisher_id, name")
       .eq("user_id", context.userId)
       .eq("publisher_id", out.publisher_id)
       .maybeSingle();
@@ -165,22 +160,17 @@ Rules:
     if (!publisher) {
       const { data: created, error } = await context.supabase
         .from("publishers")
-        .insert({
-          user_id: context.userId,
-          publisher_id: out.publisher_id,
-          name: out.name ?? null,
-          tier: out.tier ?? null,
-        })
-        .select("id, publisher_id, name, tier")
+        .insert({ user_id: context.userId, publisher_id: out.publisher_id, name: out.name ?? null })
+        .select("id, publisher_id, name")
         .single();
       if (error) throw error;
       publisher = created;
-    } else if (out.intent !== "log_note" && (out.name || out.tier)) {
+    } else if (out.intent !== "log_note" && out.name) {
       const { data: upd } = await context.supabase
         .from("publishers")
-        .update({ name: out.name ?? publisher.name, tier: out.tier ?? publisher.tier })
+        .update({ name: out.name })
         .eq("id", publisher.id)
-        .select("id, publisher_id, name, tier")
+        .select("id, publisher_id, name")
         .single();
       if (upd) publisher = upd;
     }

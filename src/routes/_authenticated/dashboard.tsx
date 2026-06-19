@@ -174,6 +174,31 @@ function Dashboard() {
         </div>
       )}
 
+      {/* Department workload — fills the previously sparse area */}
+      <section>
+        <h2 className="mb-3 px-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Department workload</h2>
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          {deptCounts.map((d) => {
+            const color = deptColor(d.value);
+            return (
+              <div
+                key={d.value}
+                className="group relative overflow-hidden rounded-2xl border border-border bg-card/60 p-4 transition hover:border-primary/40"
+              >
+                <div className="absolute inset-x-0 top-0 h-1" style={{ background: color }} />
+                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                  <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+                  {deptLabel(d.value)}
+                </div>
+                <div className="mt-2 font-display text-2xl font-semibold">{d.count}</div>
+                <div className="text-[11px] text-muted-foreground">{d.count === 1 ? "open task" : "open tasks"}</div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="lg:col-span-2 space-y-3">
           <h2 className="px-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Today's focus</h2>

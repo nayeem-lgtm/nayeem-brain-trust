@@ -100,6 +100,74 @@ export type Database = {
         }
         Relationships: []
       }
+      publisher_daily_notes: {
+        Row: {
+          created_at: string
+          id: string
+          note: string
+          note_date: string
+          publisher_uuid: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note: string
+          note_date: string
+          publisher_uuid: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string
+          note_date?: string
+          publisher_uuid?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publisher_daily_notes_publisher_uuid_fkey"
+            columns: ["publisher_uuid"]
+            isOneToOne: false
+            referencedRelation: "publishers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publishers: {
+        Row: {
+          created_at: string
+          id: string
+          name: string | null
+          publisher_id: string
+          tier: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          publisher_id: string
+          tier?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          publisher_id?: string
+          tier?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           accumulated_seconds: number

@@ -95,12 +95,52 @@ export const assistantReply = createServerFn({ method: "POST" })
       .select("title, department, priority, status, deadline, accumulated_seconds, timer_running_since, completed_at, estimated_minutes")
       .neq("status", "cancelled").order("deadline", { ascending: true, nullsFirst: false }).limit(80);
 
+    const { data: publishers } = await supabase
+      .from("publishers")
+      .select("id, publisher_id, name, created_at")
+      .order("name", { ascending: true });
+
+    // Pull last 30 days of notes so AI can answer "tell me about publisher 3791"
+    const since = new Date(); since.setDate(since.getDate() - 30);
+    const { data: pubNotes } = await supabase
+      .from("publisher_daily_notes")
+      .select("publisher_uuid, note_date, note")
+      .gte("note_date", since.toISOString().slice(0, 10))
+      .order("note_date", { ascending: false })
+      .limit(500);
+
+    const notesByPub = new Map<string, Array<{ date: string; note: string }>>();
+    for (const n of pubNotes ?? []) {
+      const arr = notesByPub.get(n.publisher_uuid) ?? [];
+      arr.push({ date: n.note_date, note: n.note });
+      notesByPub.set(n.publisher_uuid, arr);
+    }
+    const publisherSnapshot = (publishers ?? []).map((p) => ({
+      publisher_id: p.publisher_id,
+      name: p.name,
+      added: p.created_at,
+      recent_notes: (notesByPub.get(p.id) ?? []).slice(0, 14),
+    }));
+
     const sys = `You are Nayeem Co-Pilot, an AI Chief of Staff. Answer concisely and act like a senior EA.
 Today: ${new Date().toISOString()}.
-Use the task snapshot to answer questions about overdue, upcoming, time spent, prioritization, and what to work on next. Be specific, mention task titles, use markdown lists.
+
+You have access to two data sources:
+1. TASKS — answer questions about overdue, upcoming, time spent, prioritization, and what to work on next.
+2. PUBLISHERS — when the user mentions a publisher ID (e.g. "3791", "tell me about 4641", "what's the latest on VJ Digital"), match it against the publisher snapshot below and return:
+   - Publisher name + ID
+   - When added
+   - Total notes logged + last contact date
+   - Recent daily notes (chronological, most recent first)
+   If the publisher isn't found, say so clearly and suggest adding it on the Publishers page.
+
+Be specific. Use markdown lists. Reference real titles, IDs, and dates.
 
 TASK SNAPSHOT (JSON):
-${JSON.stringify(tasks ?? [])}`;
+${JSON.stringify(tasks ?? [])}
+
+PUBLISHER SNAPSHOT (JSON):
+${JSON.stringify(publisherSnapshot)}`;
 
     const messages = (history ?? []).map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
     const r = await callAnthropic({ model: CHAT_MODEL, max_tokens: 1200, system: sys, messages });

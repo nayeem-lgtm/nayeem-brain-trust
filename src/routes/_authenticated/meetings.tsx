@@ -129,10 +129,6 @@ export function MeetingCard({ event }: { event: import("@/lib/calendar.functions
 }
 
 
-function stripHtml(s: string) {
-  return s.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-}
-
 function groupByDay(events: import("@/lib/calendar.functions").CalendarEvent[]) {
   const map = new Map<string, import("@/lib/calendar.functions").CalendarEvent[]>();
   for (const e of events) {

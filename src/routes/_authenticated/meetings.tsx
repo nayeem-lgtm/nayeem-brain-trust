@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listUpcomingMeetings } from "@/lib/calendar.functions";
-import { Calendar, Video, MapPin, ExternalLink, Users } from "lucide-react";
+import { Video, MapPin, ExternalLink, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/meetings")({
   head: () => ({ meta: [{ title: "Meetings — Nayeem Co-Pilot" }] }),

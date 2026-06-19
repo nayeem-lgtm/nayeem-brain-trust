@@ -55,17 +55,16 @@ export const addPublisher = createServerFn({ method: "POST" })
     z.object({
       publisher_id: z.string().trim().min(1).max(40),
       name: z.string().trim().max(200).optional().nullable(),
-      tier: z.enum(["A", "B", "C", "D"]).optional().nullable(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("publishers")
       .upsert(
-        { user_id: context.userId, publisher_id: data.publisher_id, name: data.name ?? null, tier: data.tier ?? null },
+        { user_id: context.userId, publisher_id: data.publisher_id, name: data.name ?? null },
         { onConflict: "user_id,publisher_id" },
       )
-      .select("id, publisher_id, name, tier")
+      .select("id, publisher_id, name")
       .single();
     if (error) throw error;
     return row;

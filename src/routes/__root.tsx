@@ -72,6 +72,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "Your AI executive assistant. Brain-dump tasks in plain English; Nayeem Co-Pilot organizes, prioritizes, schedules and tracks them." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Nayeem Co-Pilot — AI Chief of Staff" },
+      { name: "twitter:description", content: "Your AI executive assistant. Brain-dump tasks in plain English; Nayeem Co-Pilot organizes, prioritizes, schedules and tracks them." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/49a41d20-af52-43fc-9601-d995926c4eac/id-preview-50a41350--77bb31f9-5453-4804-9f9c-2c972a190977.lovable.app-1781895065045.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/49a41d20-af52-43fc-9601-d995926c4eac/id-preview-50a41350--77bb31f9-5453-4804-9f9c-2c972a190977.lovable.app-1781895065045.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

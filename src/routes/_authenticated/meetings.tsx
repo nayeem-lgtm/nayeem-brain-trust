@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listUpcomingMeetings } from "@/lib/calendar.functions";
-import { Calendar, Video, MapPin, ExternalLink, Users } from "lucide-react";
+import { Video, MapPin, ExternalLink, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/meetings")({
   head: () => ({ meta: [{ title: "Meetings — Nayeem Co-Pilot" }] }),
@@ -58,46 +58,76 @@ export function MeetingCard({ event }: { event: import("@/lib/calendar.functions
   const timeLabel = start && end && !event.allDay
     ? `${start.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })} – ${end.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`
     : "All day";
+  const startSoon = start ? Math.max(0, start.getTime() - Date.now()) : 0;
+  const isLive = start && end && Date.now() >= start.getTime() && Date.now() <= end.getTime();
+  const isSoon = !isLive && startSoon > 0 && startSoon < 15 * 60_000;
 
   return (
-    <div className="group rounded-xl border border-border bg-card/60 p-4 transition hover:border-primary/30">
-      <div className="flex items-start gap-3">
-        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
-          <Calendar className="h-4 w-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="min-w-0 truncate font-medium">{event.summary}</h3>
-            <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">{timeLabel}</span>
-          </div>
-          {event.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{stripHtml(event.description)}</p>}
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            {event.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {event.location}</span>}
-            {event.attendees && event.attendees.length > 0 && (
-              <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {event.attendees.length} attendees</span>
-            )}
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {event.hangoutLink && (
-            <a href={event.hangoutLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-md bg-accent/15 px-2.5 py-1 text-xs font-medium text-accent hover:bg-accent/25">
-              <Video className="h-3 w-3" /> Join
-            </a>
+    <div className="group flex items-stretch gap-3 rounded-xl border border-border bg-card/60 p-3 transition hover:border-primary/40 hover:bg-card">
+      {/* Date chip */}
+      <div className="flex w-14 shrink-0 flex-col items-center justify-center rounded-lg bg-muted/60 py-2 text-center">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          {start ? start.toLocaleDateString(undefined, { month: "short" }) : "—"}
+        </span>
+        <span className="font-display text-lg font-semibold leading-none">
+          {start ? start.getDate() : "—"}
+        </span>
+      </div>
+
+      {/* Body */}
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="min-w-0 truncate text-sm font-medium">{event.summary}</h3>
+          {isLive && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-1.5 py-0.5 text-[10px] font-medium text-success">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> Live
+            </span>
           )}
-          {event.htmlLink && (
-            <a href={event.htmlLink} target="_blank" rel="noreferrer" title="Open in Google Calendar" className="text-muted-foreground hover:text-foreground">
-              <ExternalLink className="h-4 w-4" />
-            </a>
+          {isSoon && (
+            <span className="rounded-full bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent">
+              Soon
+            </span>
           )}
         </div>
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+          <span className="font-mono">{timeLabel}</span>
+          {event.location && (
+            <span className="inline-flex items-center gap-1 truncate"><MapPin className="h-3 w-3" /> {event.location}</span>
+          )}
+          {event.attendees && event.attendees.length > 0 && (
+            <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {event.attendees.length}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex shrink-0 items-center gap-1.5">
+        {event.hangoutLink && (
+          <a
+            href={event.hangoutLink}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground transition hover:opacity-90"
+          >
+            <Video className="h-3 w-3" /> Join
+          </a>
+        )}
+        {event.htmlLink && (
+          <a
+            href={event.htmlLink}
+            target="_blank"
+            rel="noreferrer"
+            title="Open in Google Calendar"
+            className="rounded-md p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        )}
       </div>
     </div>
   );
 }
 
-function stripHtml(s: string) {
-  return s.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-}
 
 function groupByDay(events: import("@/lib/calendar.functions").CalendarEvent[]) {
   const map = new Map<string, import("@/lib/calendar.functions").CalendarEvent[]>();

@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
+import { Route as AuthenticatedPublishersRouteImport } from './routes/_authenticated/publishers'
 import { Route as AuthenticatedMeetingsRouteImport } from './routes/_authenticated/meetings'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAssistantRouteImport } from './routes/_authenticated/assistant'
@@ -36,6 +37,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPublishersRoute = AuthenticatedPublishersRouteImport.update({
+  id: '/publishers',
+  path: '/publishers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMeetingsRoute = AuthenticatedMeetingsRouteImport.update({
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/assistant': typeof AuthenticatedAssistantRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/meetings': typeof AuthenticatedMeetingsRoute
+  '/publishers': typeof AuthenticatedPublishersRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/assistant/$threadId': typeof AuthenticatedAssistantThreadIdRoute
   '/assistant/': typeof AuthenticatedAssistantIndexRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/meetings': typeof AuthenticatedMeetingsRoute
+  '/publishers': typeof AuthenticatedPublishersRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/assistant/$threadId': typeof AuthenticatedAssistantThreadIdRoute
   '/assistant': typeof AuthenticatedAssistantIndexRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/_authenticated/assistant': typeof AuthenticatedAssistantRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/meetings': typeof AuthenticatedMeetingsRoute
+  '/_authenticated/publishers': typeof AuthenticatedPublishersRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/assistant/$threadId': typeof AuthenticatedAssistantThreadIdRoute
   '/_authenticated/assistant/': typeof AuthenticatedAssistantIndexRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/assistant'
     | '/dashboard'
     | '/meetings'
+    | '/publishers'
     | '/tasks'
     | '/assistant/$threadId'
     | '/assistant/'
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/meetings'
+    | '/publishers'
     | '/tasks'
     | '/assistant/$threadId'
     | '/assistant'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
     | '/_authenticated/assistant'
     | '/_authenticated/dashboard'
     | '/_authenticated/meetings'
+    | '/_authenticated/publishers'
     | '/_authenticated/tasks'
     | '/_authenticated/assistant/$threadId'
     | '/_authenticated/assistant/'
@@ -164,6 +176,13 @@ declare module '@tanstack/react-router' {
       path: '/tasks'
       fullPath: '/tasks'
       preLoaderRoute: typeof AuthenticatedTasksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/publishers': {
+      id: '/_authenticated/publishers'
+      path: '/publishers'
+      fullPath: '/publishers'
+      preLoaderRoute: typeof AuthenticatedPublishersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/meetings': {
@@ -224,6 +243,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAssistantRoute: typeof AuthenticatedAssistantRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedMeetingsRoute: typeof AuthenticatedMeetingsRoute
+  AuthenticatedPublishersRoute: typeof AuthenticatedPublishersRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
 }
 
@@ -231,6 +251,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAssistantRoute: AuthenticatedAssistantRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedMeetingsRoute: AuthenticatedMeetingsRoute,
+  AuthenticatedPublishersRoute: AuthenticatedPublishersRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
 }
 
@@ -245,13 +266,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
